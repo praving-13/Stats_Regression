@@ -1,0 +1,262 @@
+Multi Linear Assignment
+Pawan Srivastav
+3 July 2018
+Prepare a prediction model for profit of 50_startups data. Do transformations for getting better predictions of profit and make a table containing R^2 value for each prepared model.
+# Loading the data into a variable
+library(data.table)
+
+startup_50 <- fread("C:\\Users\\Pawan Srivastav\\Desktop\\Data Science\\Data Sets\\Data Sets\\Multilinear Regression\\50_Startups.csv")
+
+# Getting Summary of data
+summary(startup_50)
+##    R&D Spend      Administration   Marketing Spend     State          
+##  Min.   :     0   Min.   : 51283   Min.   :     0   Length:50         
+##  1st Qu.: 39936   1st Qu.:103731   1st Qu.:129300   Class :character  
+##  Median : 73051   Median :122700   Median :212716   Mode  :character  
+##  Mean   : 73722   Mean   :121345   Mean   :211025                     
+##  3rd Qu.:101603   3rd Qu.:144842   3rd Qu.:299469                     
+##  Max.   :165349   Max.   :182646   Max.   :471784                     
+##      Profit      
+##  Min.   : 14681  
+##  1st Qu.: 90139  
+##  Median :107978  
+##  Mean   :112013  
+##  3rd Qu.:139766  
+##  Max.   :192262
+# Variance
+var(startup_50$`R&D Spend`)
+## [1] 2107017150
+var(startup_50$Administration)
+## [1] 784997271
+var(startup_50$`Marketing Spend`)
+## [1] 14954920097
+var(startup_50$Profit)
+## [1] 1624588173
+# Standard Deviation
+sd(startup_50$`R&D Spend`)
+## [1] 45902.26
+sd(startup_50$Administration)
+## [1] 28017.8
+sd(startup_50$`Marketing Spend`)
+## [1] 122290.3
+sd(startup_50$Profit)
+## [1] 40306.18
+Checking how many city are in state
+unique(startup_50$State)
+## [1] "New York"   "California" "Florida"
+Creating 3 dummy variable for state
+startup_50 <- cbind(startup_50,ifelse(startup_50$State=="New York",1,0), ifelse(startup_50$State=="California",1,0),  ifelse(startup_50$State=="Florida",1,0))
+
+
+# Renaming the column
+setnames(startup_50, 'V2','New York')
+setnames(startup_50, 'V3','California')
+setnames(startup_50, 'V4','Florida')
+
+# Ploting the data on scatter plot
+# plot(startup_50) # This line give us error because we have a texual values state
+plot(startup_50[,-c('State')]) # In this plot we are plotting dummy which seems no relative
+
+
+plot(startup_50[,-c('State','New York','California','Florida')]) # After removing state and dummy columns
+
+
+After seeing scatter finding correlation
+library(corpcor)
+cor2pcor(cor(startup_50[,-c('State','New York','California','Florida')]))
+##            [,1]        [,2]        [,3]        [,4]
+## [1,] 1.00000000  0.20852619  0.03890336  0.93477127
+## [2,] 0.20852619  1.00000000 -0.28192506 -0.07725021
+## [3,] 0.03890336 -0.28192506  1.00000000  0.23707116
+## [4,] 0.93477127 -0.07725021  0.23707116  1.00000000
+Creating Model
+colnames(startup_50)
+## [1] "R&D Spend"       "Administration"  "Marketing Spend" "State"          
+## [5] "Profit"          "New York"        "California"      "Florida"
+Profit_Model <- lm(Profit~`R&D Spend`+Administration+`Marketing Spend`, data = startup_50)
+
+summary(Profit_Model)
+## 
+## Call:
+## lm(formula = Profit ~ `R&D Spend` + Administration + `Marketing Spend`, 
+##     data = startup_50)
+## 
+## Residuals:
+##    Min     1Q Median     3Q    Max 
+## -33534  -4795     63   6606  17275 
+## 
+## Coefficients:
+##                     Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)        5.012e+04  6.572e+03   7.626 1.06e-09 ***
+## `R&D Spend`        8.057e-01  4.515e-02  17.846  < 2e-16 ***
+## Administration    -2.682e-02  5.103e-02  -0.526    0.602    
+## `Marketing Spend`  2.723e-02  1.645e-02   1.655    0.105    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 9232 on 46 degrees of freedom
+## Multiple R-squared:  0.9507, Adjusted R-squared:  0.9475 
+## F-statistic:   296 on 3 and 46 DF,  p-value: < 2.2e-16
+P value is greater than 0.05 so now checking the influence records
+
+library(car)
+## Loading required package: carData
+influenceIndexPlot(Profit_Model)
+
+
+influencePlot(Profit_Model,id.n=3)
+## Warning in plot.window(...): "id.n" is not a graphical parameter
+## Warning in plot.xy(xy, type, ...): "id.n" is not a graphical parameter
+## Warning in axis(side = side, at = at, labels = labels, ...): "id.n" is not
+## a graphical parameter
+
+## Warning in axis(side = side, at = at, labels = labels, ...): "id.n" is not
+## a graphical parameter
+## Warning in box(...): "id.n" is not a graphical parameter
+## Warning in title(...): "id.n" is not a graphical parameter
+## Warning in plot.xy(xy.coords(x, y), type = type, ...): "id.n" is not a
+## graphical parameter
+
+
+##       StudRes        Hat      CookD
+## 46  2.0220730 0.08617007 0.09032342
+## 47 -0.8268684 0.24060165 0.05453034
+## 49 -1.6861241 0.21801940 0.19052744
+## 50 -4.4961657 0.07477116 0.28808229
+Profit_Model_Inf <- lm(Profit~`R&D Spend`+Administration+`Marketing Spend`, data = startup_50[-c(50,49),])
+
+summary(Profit_Model_Inf)
+## 
+## Call:
+## lm(formula = Profit ~ `R&D Spend` + Administration + `Marketing Spend`, 
+##     data = startup_50[-c(50, 49), ])
+## 
+## Residuals:
+##    Min     1Q Median     3Q    Max 
+## -16252  -4983  -2042   6019  13631 
+## 
+## Coefficients:
+##                     Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)        5.910e+04  5.917e+03   9.988 6.92e-13 ***
+## `R&D Spend`        7.895e-01  3.635e-02  21.718  < 2e-16 ***
+## Administration    -6.335e-02  4.392e-02  -1.442    0.156    
+## `Marketing Spend`  1.689e-02  1.353e-02   1.249    0.218    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 7349 on 44 degrees of freedom
+## Multiple R-squared:  0.9627, Adjusted R-squared:  0.9601 
+## F-statistic: 378.3 on 3 and 44 DF,  p-value: < 2.2e-16
+Variance Inflation factor to check collinearity b/n variables
+Profit_Model <- lm(Profit~`R&D Spend`+Administration+`Marketing Spend`, data = startup_50)
+class(startup_50$`Marketing Spend`)
+## [1] "numeric"
+vif(Profit_Model)
+##       `R&D Spend`    Administration `Marketing Spend` 
+##          2.468903          1.175091          2.326773
+summary(Profit_Model)
+## 
+## Call:
+## lm(formula = Profit ~ `R&D Spend` + Administration + `Marketing Spend`, 
+##     data = startup_50)
+## 
+## Residuals:
+##    Min     1Q Median     3Q    Max 
+## -33534  -4795     63   6606  17275 
+## 
+## Coefficients:
+##                     Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)        5.012e+04  6.572e+03   7.626 1.06e-09 ***
+## `R&D Spend`        8.057e-01  4.515e-02  17.846  < 2e-16 ***
+## Administration    -2.682e-02  5.103e-02  -0.526    0.602    
+## `Marketing Spend`  2.723e-02  1.645e-02   1.655    0.105    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 9232 on 46 degrees of freedom
+## Multiple R-squared:  0.9507, Adjusted R-squared:  0.9475 
+## F-statistic:   296 on 3 and 46 DF,  p-value: < 2.2e-16
+## vif>10 then there exists collinearity among all the variables 
+## Added Variable plot to check correlation b/n variables and o/p variable
+avPlots(Profit_Model)
+
+
+Creating final model after removing Administration data.
+Profit_Model_Revised <- lm(Profit~`R&D Spend`+Administration+`Marketing Spend`+`New York`+California+Florida, data = startup_50)
+
+library(MASS)
+
+stepAIC(Profit_Model_Revised)
+## Start:  AIC=920.87
+## Profit ~ `R&D Spend` + Administration + `Marketing Spend` + `New York` + 
+##     California + Florida
+## 
+## 
+## Step:  AIC=920.87
+## Profit ~ `R&D Spend` + Administration + `Marketing Spend` + `New York` + 
+##     California
+## 
+##                     Df  Sum of Sq        RSS     AIC
+## - California         1 3.0984e+05 3.9206e+09  918.88
+## - `New York`         1 4.6296e+05 3.9208e+09  918.88
+## - Administration     1 2.3816e+07 3.9442e+09  919.17
+## <none>                            3.9203e+09  920.87
+## - `Marketing Spend`  1 2.2071e+08 4.1410e+09  921.61
+## - `R&D Spend`        1 2.6878e+10 3.0799e+10 1021.94
+## 
+## Step:  AIC=918.88
+## Profit ~ `R&D Spend` + Administration + `Marketing Spend` + `New York`
+## 
+##                     Df  Sum of Sq        RSS     AIC
+## - `New York`         1 2.0682e+05 3.9209e+09  916.88
+## - Administration     1 2.3662e+07 3.9443e+09  917.18
+## <none>                            3.9206e+09  918.88
+## - `Marketing Spend`  1 2.3000e+08 4.1507e+09  919.73
+## - `R&D Spend`        1 2.6901e+10 3.0821e+10 1019.97
+## 
+## Step:  AIC=916.88
+## Profit ~ `R&D Spend` + Administration + `Marketing Spend`
+## 
+##                     Df  Sum of Sq        RSS     AIC
+## - Administration     1 2.3539e+07 3.9444e+09  915.18
+## <none>                            3.9209e+09  916.88
+## - `Marketing Spend`  1 2.3349e+08 4.1543e+09  917.77
+## - `R&D Spend`        1 2.7147e+10 3.1068e+10 1018.37
+## 
+## Step:  AIC=915.18
+## Profit ~ `R&D Spend` + `Marketing Spend`
+## 
+##                     Df  Sum of Sq        RSS     AIC
+## <none>                            3.9444e+09  915.18
+## - `Marketing Spend`  1 3.1165e+08 4.2560e+09  916.98
+## - `R&D Spend`        1 3.1149e+10 3.5094e+10 1022.46
+## 
+## Call:
+## lm(formula = Profit ~ `R&D Spend` + `Marketing Spend`, data = startup_50)
+## 
+## Coefficients:
+##       (Intercept)        `R&D Spend`  `Marketing Spend`  
+##         4.698e+04          7.966e-01          2.991e-02
+Profit_Model_Final <- lm(Profit~`R&D Spend`+`Marketing Spend`, data = startup_50)
+
+summary(Profit_Model_Final)
+## 
+## Call:
+## lm(formula = Profit ~ `R&D Spend` + `Marketing Spend`, data = startup_50)
+## 
+## Residuals:
+##    Min     1Q Median     3Q    Max 
+## -33645  -4632   -414   6484  17097 
+## 
+## Coefficients:
+##                    Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)       4.698e+04  2.690e+03  17.464   <2e-16 ***
+## `R&D Spend`       7.966e-01  4.135e-02  19.266   <2e-16 ***
+## `Marketing Spend` 2.991e-02  1.552e-02   1.927     0.06 .  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 9161 on 47 degrees of freedom
+## Multiple R-squared:  0.9505, Adjusted R-squared:  0.9483 
+## F-statistic: 450.8 on 2 and 47 DF,  p-value: < 2.2e-16
+plot(Profit_Model_Final)
